@@ -1,23 +1,31 @@
 package rocks.raimondi.dustin.pubnubdemo;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Looper;
+import android.support.annotation.MainThread;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.pubnub.api.PNConfiguration;
 import com.pubnub.api.PubNub;
 import com.pubnub.api.callbacks.PNCallback;
@@ -27,7 +35,13 @@ import com.pubnub.api.models.consumer.PNStatus;
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener
@@ -40,6 +54,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private PubNub pubNub;
     private int PERMISSION_LOCATION_CODE = 1;
     private double position[] = new double[2];
+    private static Context mContext;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,9 +131,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void handleNewLocation(Location location) {
-        Log.d(TAG, location.toString());
-        position[0] = location.getLatitude();
-        position[1] = location.getLongitude();
+        System.out.println(location.getLatitude());
+        try {
+            JSONObject position = new JSONObject();
+            position.put("lat", location.getLatitude());
+            position.put("lng", location.getLongitude());
+            System.out.println(position);
+        } catch (JSONException e) {
+            System.out.println("json not work");
+            e.printStackTrace();
+        }
 
         pubNub.publish()
                 .message(position)
@@ -146,10 +170,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void subscribe(){
         pubNub.subscribe()
                 .channels(Arrays.asList("my_channel")) // subscribe to channel groups
-                .withPresence() // also subscribe to related presence information
                 .execute();
 
         pubNub.addListener(new SubscribeCallback() {
+
             @Override
             public void status(PubNub pubnub, PNStatus status) {
 
@@ -157,12 +181,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             @Override
             public void message(PubNub pubnub, PNMessageResult message) {
-                System.out.println(message.getMessage());
+                if (message.getMessage().get("lat") != null && message.getMessage().get("lng") != null) {
+                    double lat = message.getMessage().get("lat").doubleValue();
+                    double lng = message.getMessage().get("lng").doubleValue();
+                    final LatLng point = new LatLng(lat,lng);
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mMap.addMarker(new MarkerOptions().position(point).title("butts"));
+                        }
+                    });
+                }
             }
 
             @Override
             public void presence(PubNub pubnub, PNPresenceEventResult presence) {
-                // handle incoming presence data
             }
         });
     }
