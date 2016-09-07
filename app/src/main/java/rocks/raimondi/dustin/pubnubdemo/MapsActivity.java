@@ -14,6 +14,8 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -30,6 +32,7 @@ import com.pubnub.api.PNConfiguration;
 import com.pubnub.api.PubNub;
 import com.pubnub.api.callbacks.PNCallback;
 import com.pubnub.api.callbacks.SubscribeCallback;
+import com.pubnub.api.enums.PNLogVerbosity;
 import com.pubnub.api.models.consumer.PNPublishResult;
 import com.pubnub.api.models.consumer.PNStatus;
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
@@ -53,10 +56,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationRequest mLocationRequest;
     private PubNub pubNub;
     private int PERMISSION_LOCATION_CODE = 1;
-    private double position[] = new double[2];
-    private static Context mContext;
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +69,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         PNConfiguration pnConfiguration = new PNConfiguration();
         pnConfiguration.setSubscribeKey("sub-c-b041ef38-6fd9-11e6-a014-0619f8945a4f");
         pnConfiguration.setPublishKey("pub-c-e75c9aff-4de3-4064-9bdf-a698460c1426");
+        pnConfiguration.setLogVerbosity(PNLogVerbosity.BODY);
 
         pubNub = new PubNub(pnConfiguration);
 
@@ -131,16 +131,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void handleNewLocation(Location location) {
-        System.out.println(location.getLatitude());
-        try {
-            JSONObject position = new JSONObject();
-            position.put("lat", location.getLatitude());
-            position.put("lng", location.getLongitude());
-            System.out.println(position);
-        } catch (JSONException e) {
-            System.out.println("json not work");
-            e.printStackTrace();
-        }
+        JsonNodeFactory factory = JsonNodeFactory.instance;
+        ObjectNode position = factory.objectNode();
+        position.put("lat", location.getLatitude());
+        position.put("lng", location.getLongitude());
 
         pubNub.publish()
                 .message(position)
@@ -148,8 +142,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .async(new PNCallback<PNPublishResult>() {
                     @Override
                     public void onResponse(PNPublishResult result, PNStatus status) {
-                        // handle publish result, status always present, result if successful
-                        // status.isError to see if error happened
+
                     }
                 });
     }

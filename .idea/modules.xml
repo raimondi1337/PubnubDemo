@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/PubnubDemo.iml" filepath="$PROJECT_DIR$/PubnubDemo.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/slf4j-api-1.7.15/slf4j-api-1.7.15.iml" filepath="$PROJECT_DIR$/slf4j-api-1.7.15/slf4j-api-1.7.15.iml" />
     </modules>
   </component>
 </project>
